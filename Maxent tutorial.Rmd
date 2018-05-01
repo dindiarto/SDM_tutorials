@@ -1,0 +1,33 @@
+---
+title: "Species Distribution Modelling with MaxEnt in R"
+output: html_notebook
+author: "Dony Indiarto"
+---
+
+***
+
+##Chapter 1 Introduction
+
+Synonyms: Climate modelling envelope, habitat modelling, and niche-modeling.
+
+Main Aim: to estimate the similarity of the condition at any site to the conditions at any sites to the conditions at the locations of known occurence of a phenomenon.
+
+##### Major steps in SDMs:
+
+1. a compilation of species occurence locations
+2. values of environmental predictor variables (such as climate), extracted from climate databases
+3. model fitting
+4. prediction of variable of interest across an the region of interest
+
+***
+##Chapter 2
+
+> Improving the quality of occurrence data first, model comparison second.
+
+
+
+
+```{r}
+
+```
+
