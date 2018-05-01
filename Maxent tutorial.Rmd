@@ -19,15 +19,146 @@ Main Aim: to estimate the similarity of the condition at any site to the conditi
 3. model fitting
 4. prediction of variable of interest across an the region of interest
 
+Required packages:
+__install.packages(c(’raster’, ’rgdal’, ’dismo’, ’rJava’))__
+
 ***
-##Chapter 2
+##Chapter 2 Species occurence data
+
+
+All model perform better with  unbiased and error-free data. Garbage in garbage out applies.
 
 > Improving the quality of occurrence data first, model comparison second.
 
 
+```{r include=T, echo=T, eval=FALSE}
+#load libraries
+library(raster)
+library(rgdal)
+library(dismo)
+library(rJava)
+library(readr)
+```
 
-
-```{r}
+### 2.1 Presence data input arrangements
+```{r Bradypus data example collapse=T}
+#load occurence dataset
+ bradypus <- read_csv(paste(system.file(package="dismo"), "/ex/bradypus.csv", sep=""))
+head(bradypus)
 
 ```
 
+Species occurence dataframe consists of:
+
+1. species name
+2. x or longitude
+3. y or latitude
+
+Do not change the order. A single row represents an occurence. Many occurence has 
+Data can be gathered from Global Biodiversity Inventory Facility (GBIF) (http:
+//www.gbif.org/).
+~~We can use a function from dismo package to download species occurence data from GBIF :~~
+
+
+Dismo uses the old GBIF API therefore use occ function from spocc package (Interface to many species occurrence data sources):
+
+### 2.2 Load data from GBIF
+```{r load data from GBIF}
+library(spocc)
+acaule<- occ(query="Solanum acaule", from='gbif', limit=10000)
+acaule<-acaule$gbif$data$Solanum_acaule
+#data dimension
+dim(acaule)
+
+#data column names
+colnames(acaule)
+library(plyr)
+acaule$country<-revalue(acaule$country, c("Bolivia, Plurinational State of"="Bolivia"))
+
+```
+
+
+### 2.3 Data cleaning
+#### 2.3.1 Unfiltered data visualisation
+Create a map of species occurence
+
+```{r unfiltered presence data}
+#data filtering, select the records that have longitude and latitude data
+acgeo <- (subset(acaule, !is.na(longitude) & !is.na(latitude)))
+dim(acgeo)
+
+library(maptools)
+data("wrld_simpl")
+plot(wrld_simpl, xlim=c(-40,20), ylim=c(-70,70), axes=T, col='light yellow')
+box()
+points(acgeo$longitude, acgeo$latitude, col='orange', pch=20, cex=0.75)
+ points(acgeo$longitude, acgeo$latitude, col='red', cex=0.75)
+ 
+
+
+
+
+```
+
+*Solanum acaule* presents in the higher parts of the Andes mountains of southern Peru, Bolivia, and Northern Argentina. 
+
+As we see from the map, there are some errors occured. Points in Sweden, Mexico, Southern argentina, and Brazil might not be true. Background knowledge on species distribution is required.
+
+Common mistakes:
+
+1. missing minus signs
+2. duplicates (identical data points that were submitted twice or more)
+3. latitude/longitude typo
+4. 0 coordinates where 'NAs' were intended (not georeferenced yet)
+
+#### 2.3.2 Filtered data visualisation based on expert judgement/background knowledge
+```{r filtered presence data}
+
+dim(acgeo) #unfiltered dataset
+#remove error data pouints from acgeo
+filtered_acgeo<-dplyr::filter(acgeo, (longitude<(-55)&latitude<0& latitude>=-35)) #removing data points on South Argentina, Peru, Sweden, and Brazil
+
+dim(filtered_acgeo) #filtered dataset
+
+#filtered dataset
+plot(wrld_simpl, xlim=c(-40,20), ylim=c(-70,70), axes=T, col='light yellow')
+box()
+points(filtered_acgeo$longitude, filtered_acgeo$latitude, col='orange', pch=20, cex=0.75)
+ points(filtered_acgeo$longitude, filtered_acgeo$latitude, col='red', cex=0.75)
+
+```
+#### 2.3.4 Cross-checking
+
+cross-check corrdinates by visual and other means. In this case, we compare the country as specified by the records with the country implied by the coordinates.
+
+```{r}
+acg<-filtered_acgeo
+library(sp)
+coordinates(acg)<- ~longitude+latitude
+
+gadm_countries<-readRDS("./data/countries_gadm28.rds")
+
+crs(acg)<-crs(gadm_countries)
+
+# a check whether both datasets are under same data type and crs
+class (acg)
+class(gadm_countries)
+
+ovr <- over(acg, gadm_countries)
+cntr <- ovr$NAME
+i <- which(is.na(cntr)) # which data points do not match any country
+
+j <- which(cntr!= acg$country) # which data points missmatch
+cbind(as.character(cntr), acg$country)[j,]
+
+plot(acg)
+plot(gadm_countries, add=T, border='blue', lwd=2)
+points(acg[j, ], col='red', pch=20, cex=2)
+
+
+```
+
+No data missmatch
+
+
+##Chapter 3 Environmental variables

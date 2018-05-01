@@ -188,22 +188,67 @@ $(document).ready(function () {
 <li>model fitting</li>
 <li>prediction of variable of interest across an the region of interest</li>
 </ol>
+<p>Required packages: <strong>install.packages(c(’raster’, ’rgdal’, ’dismo’, ’rJava’))</strong></p>
 <hr />
 </div>
 </div>
 <div id="chapter-2" class="section level2">
 <h2>Chapter 2</h2>
+<p>All model perform better with unbiased and error-free data. Garbage in garbage out applies.</p>
 <blockquote>
 <p>Improving the quality of occurrence data first, model comparison second.</p>
 </blockquote>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjpbIiNsb2FkIGxpYnJhcmllcyIsImxpYnJhcnkocmFzdGVyKSIsImxpYnJhcnkocmdkYWwpIiwibGlicmFyeShkaXNtbykiLCJsaWJyYXJ5KHJKYXZhKSIsImxpYnJhcnkocmVhZHIpIl19 -->
+<pre class="r"><code>#load libraries
+library(raster)
+library(rgdal)
+library(dismo)
+library(rJava)
+library(readr)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIGJyYWR5cHVzIDwtIHJlYWRfY3N2KHBhc3RlKHN5c3RlbS5maWxlKHBhY2thZ2U9XCJkaXNtb1wiKSwgXCIvZXgvYnJhZHlwdXMuY3N2XCIsIHNlcD1cIlwiKSlcbmBgYCJ9 -->
+<pre class="r"><code> bradypus &lt;- read_csv(paste(system.file(package=&quot;dismo&quot;), &quot;/ex/bradypus.csv&quot;, sep=&quot;&quot;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICBzcGVjaWVzID0gY29sX2NoYXJhY3RlcigpLFxuICBsb24gPSBjb2xfZG91YmxlKCksXG4gIGxhdCA9IGNvbF9kb3VibGUoKVxuKVxuIn0= -->
+<pre><code>Parsed with column specification:
+cols(
+  species = col_character(),
+  lon = col_double(),
+  lat = col_double()
+)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaGVhZChicmFkeXB1cylcbmBgYCJ9 -->
+<pre class="r"><code>head(bradypus)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibmNvbCI6MywibnJvdyI6Nn0sInJkZiI6Ikg0c0lBQUFBQUFBQUJndHlpVERpaXVCaVlHQmdZbUJtWVdSZ1lnWXlXWmlBQkNNREN3TW5pSzVnWUdBV0JqSkFNZ0pBekFhVkVIWXFTa3lwTENndFZpaExMTXBNVFU4c0tTMGVMRklNREh3Z2x4NElpSndKQkxNT0JFUzAvOW1wdlBoQWdBZUU5cjhhbHZORlh2R0EvNXN6UUhEMlFJRFVhck1xL29sd2ZTcEg3SitlbEJXRjB3Wm5JT29NaTQxQjRJQmhHaGdjTUdDQUFwUWdZODFMekUwdGhnWVhNMVNRdmJnZ05Ua3pGZVpzNXB6OFBEZ3pzUVROQk02aS9ISTltQ204b05ocEFCTC8vLy8vaFc1VmNrNWlNY3dxbUNCWFNtSkpvbDVhRVZBL2tQY1BUUXQ3ZmtGSlpuNGVVQk9UTURnNlVUVXpocUFMRktFSjhKZm1nWnlXb3B1Y1VacVhyV3NJc2hFc0RRRzhVRFliRXBzWjRnYW0vMmhwaUNNNVB5Y25zYUE0RmNwblM4MUx6OHlEOFZoekVwTlNjNkFjUG1DUWdFTkVyNkFvTTY4RTVsV2dhTEZlU1g1Sklrd2RGOUJJbUFqWTh3ei9BTTYvQ2hmbEFnQUEifQ== -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["species"],"name":[1],"type":["chr"],"align":["left"]},{"label":["lon"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["lat"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"Bradypus variegatus","2":"-65.4000","3":"-10.3833"},{"1":"Bradypus variegatus","2":"-65.3833","3":"-10.3833"},{"1":"Bradypus variegatus","2":"-65.1333","3":"-16.8000"},{"1":"Bradypus variegatus","2":"-63.6667","3":"-17.4500"},{"1":"Bradypus variegatus","2":"-63.8500","3":"-17.4000"},{"1":"Bradypus variegatus","2":"-64.4167","3":"-16.0000"}],"options":{"columns":{"min":{},"max":[10],"total":[3]},"rows":{"min":[10],"max":[10],"total":[6]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Species occurence dataframe consists of:</p>
+<ol style="list-style-type: decimal">
+<li>species name</li>
+<li>x or longitude</li>
+<li>y or latitude</li>
+</ol>
+<p>Do not change the order. A single row represents an occurence. Data can be gathered from Global Biodiversity Inventory Facility (GBIF) (http: //www.gbif.org/). We can use a function from dismo package to download species occurence data from GBIF :</p>
+<blockquote>
+<p>acaule = gbif(“solanum”, “acaule*“, geo=FALSE)</p>
+</blockquote>
+<!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlNwZWNpZXMgRGlzdHJpYnV0aW9uIE1vZGVsbGluZyB3aXRoIE1heEVudCBpbiBSIg0Kb3V0cHV0OiBodG1sX25vdGVib29rDQphdXRob3I6ICJEb255IEluZGlhcnRvIg0KLS0tDQoNCioqKg0KDQojI0NoYXB0ZXIgMSBJbnRyb2R1Y3Rpb24NCg0KU3lub255bXM6IENsaW1hdGUgbW9kZWxsaW5nIGVudmVsb3BlLCBoYWJpdGF0IG1vZGVsbGluZywgYW5kIG5pY2hlLW1vZGVsaW5nLg0KDQpNYWluIEFpbTogdG8gZXN0aW1hdGUgdGhlIHNpbWlsYXJpdHkgb2YgdGhlIGNvbmRpdGlvbiBhdCBhbnkgc2l0ZSB0byB0aGUgY29uZGl0aW9ucyBhdCBhbnkgc2l0ZXMgdG8gdGhlIGNvbmRpdGlvbnMgYXQgdGhlIGxvY2F0aW9ucyBvZiBrbm93biBvY2N1cmVuY2Ugb2YgYSBwaGVub21lbm9uLg0KDQojIyMjIyBNYWpvciBzdGVwcyBpbiBTRE1zOg0KDQoxLiBhIGNvbXBpbGF0aW9uIG9mIHNwZWNpZXMgb2NjdXJlbmNlIGxvY2F0aW9ucw0KMi4gdmFsdWVzIG9mIGVudmlyb25tZW50YWwgcHJlZGljdG9yIHZhcmlhYmxlcyAoc3VjaCBhcyBjbGltYXRlKSwgZXh0cmFjdGVkIGZyb20gY2xpbWF0ZSBkYXRhYmFzZXMNCjMuIG1vZGVsIGZpdHRpbmcNCjQuIHByZWRpY3Rpb24gb2YgdmFyaWFibGUgb2YgaW50ZXJlc3QgYWNyb3NzIGFuIHRoZSByZWdpb24gb2YgaW50ZXJlc3QNCg0KKioqDQojI0NoYXB0ZXIgMg0KDQo+IEltcHJvdmluZyB0aGUgcXVhbGl0eSBvZiBvY2N1cnJlbmNlIGRhdGEgZmlyc3QsIG1vZGVsIGNvbXBhcmlzb24gc2Vjb25kLg0KDQoNCg0KDQpgYGB7cn0NCg0KYGBgDQoNCg==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlNwZWNpZXMgRGlzdHJpYnV0aW9uIE1vZGVsbGluZyB3aXRoIE1heEVudCBpbiBSIg0Kb3V0cHV0OiBodG1sX25vdGVib29rDQphdXRob3I6ICJEb255IEluZGlhcnRvIg0KLS0tDQoNCioqKg0KDQojI0NoYXB0ZXIgMSBJbnRyb2R1Y3Rpb24NCg0KU3lub255bXM6IENsaW1hdGUgbW9kZWxsaW5nIGVudmVsb3BlLCBoYWJpdGF0IG1vZGVsbGluZywgYW5kIG5pY2hlLW1vZGVsaW5nLg0KDQpNYWluIEFpbTogdG8gZXN0aW1hdGUgdGhlIHNpbWlsYXJpdHkgb2YgdGhlIGNvbmRpdGlvbiBhdCBhbnkgc2l0ZSB0byB0aGUgY29uZGl0aW9ucyBhdCBhbnkgc2l0ZXMgdG8gdGhlIGNvbmRpdGlvbnMgYXQgdGhlIGxvY2F0aW9ucyBvZiBrbm93biBvY2N1cmVuY2Ugb2YgYSBwaGVub21lbm9uLg0KDQojIyMjIyBNYWpvciBzdGVwcyBpbiBTRE1zOg0KDQoxLiBhIGNvbXBpbGF0aW9uIG9mIHNwZWNpZXMgb2NjdXJlbmNlIGxvY2F0aW9ucw0KMi4gdmFsdWVzIG9mIGVudmlyb25tZW50YWwgcHJlZGljdG9yIHZhcmlhYmxlcyAoc3VjaCBhcyBjbGltYXRlKSwgZXh0cmFjdGVkIGZyb20gY2xpbWF0ZSBkYXRhYmFzZXMNCjMuIG1vZGVsIGZpdHRpbmcNCjQuIHByZWRpY3Rpb24gb2YgdmFyaWFibGUgb2YgaW50ZXJlc3QgYWNyb3NzIGFuIHRoZSByZWdpb24gb2YgaW50ZXJlc3QNCg0KUmVxdWlyZWQgcGFja2FnZXM6DQpfX2luc3RhbGwucGFja2FnZXMoYyjigJlyYXN0ZXLigJksIOKAmXJnZGFs4oCZLCDigJlkaXNtb+KAmSwg4oCZckphdmHigJkpKV9fDQoNCioqKg0KIyNDaGFwdGVyIDINCg0KDQoNCkFsbCBtb2RlbCBwZXJmb3JtIGJldHRlciB3aXRoICB1bmJpYXNlZCBhbmQgZXJyb3ItZnJlZSBkYXRhLiBHYXJiYWdlIGluIGdhcmJhZ2Ugb3V0IGFwcGxpZXMuDQoNCj4gSW1wcm92aW5nIHRoZSBxdWFsaXR5IG9mIG9jY3VycmVuY2UgZGF0YSBmaXJzdCwgbW9kZWwgY29tcGFyaXNvbiBzZWNvbmQuDQoNCg0KDQpgYGB7ciBpbmNsdWRlPVQsIGVjaG89VCwgZXZhbD1GQUxTRX0NCiNsb2FkIGxpYnJhcmllcw0KbGlicmFyeShyYXN0ZXIpDQpsaWJyYXJ5KHJnZGFsKQ0KbGlicmFyeShkaXNtbykNCmxpYnJhcnkockphdmEpDQpsaWJyYXJ5KHJlYWRyKQ0KYGBgDQoNCmBgYHtyIGNvbGxhcHNlPVR9DQojbG9hZCBvY2N1cmVuY2UgZGF0YXNldA0KIGJyYWR5cHVzIDwtIHJlYWRfY3N2KHBhc3RlKHN5c3RlbS5maWxlKHBhY2thZ2U9ImRpc21vIiksICIvZXgvYnJhZHlwdXMuY3N2Iiwgc2VwPSIiKSkNCmhlYWQoYnJhZHlwdXMpDQoNCmBgYA0KDQpTcGVjaWVzIG9jY3VyZW5jZSBkYXRhZnJhbWUgY29uc2lzdHMgb2Y6DQoNCjEuIHNwZWNpZXMgbmFtZQ0KMi4geCBvciBsb25naXR1ZGUNCjMuIHkgb3IgbGF0aXR1ZGUNCg0KRG8gbm90IGNoYW5nZSB0aGUgb3JkZXIuIEEgc2luZ2xlIHJvdyByZXByZXNlbnRzIGFuIG9jY3VyZW5jZS4NCkRhdGEgY2FuIGJlIGdhdGhlcmVkIGZyb20gR2xvYmFsIEJpb2RpdmVyc2l0eSBJbnZlbnRvcnkgRmFjaWxpdHkgKEdCSUYpIChodHRwOg0KLy93d3cuZ2JpZi5vcmcvKS4NCldlIGNhbiB1c2UgYSBmdW5jdGlvbiBmcm9tIGRpc21vIHBhY2thZ2UgdG8gZG93bmxvYWQgc3BlY2llcyBvY2N1cmVuY2UgZGF0YSBmcm9tIEdCSUYgOg0KDQo+YWNhdWxlID0gZ2JpZigic29sYW51bSIsICJhY2F1bGUqIiwgZ2VvPUZBTFNFKQ0KDQoNCg0K</div>
 
 
 
