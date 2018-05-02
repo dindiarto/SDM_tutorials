@@ -41,8 +41,8 @@ library(readr)
 ```
 
 ### 2.1 Presence data input arrangements
-```{r Bradypus data example collapse=T}
-#load occurence dataset
+```{r collapse=T}
+#load occurence dataset: Bradypus data example
  bradypus <- read_csv(paste(system.file(package="dismo"), "/ex/bradypus.csv", sep=""))
 head(bradypus)
 
@@ -88,7 +88,7 @@ acgeo <- (subset(acaule, !is.na(longitude) & !is.na(latitude)))
 dim(acgeo)
 
 library(maptools)
-data("wrld_simpl")
+data("wrld_simpl") # lightweight global map, not reccomended for 
 plot(wrld_simpl, xlim=c(-40,20), ylim=c(-70,70), axes=T, col='light yellow')
 box()
 points(acgeo$longitude, acgeo$latitude, col='orange', pch=20, cex=0.75)
@@ -109,7 +109,8 @@ Common mistakes:
 1. missing minus signs
 2. duplicates (identical data points that were submitted twice or more)
 3. latitude/longitude typo
-4. 0 coordinates where 'NAs' were intended (not georeferenced yet)
+4. 0 coordinates where 'NAs' were intended (not georeferenced yet, we can apply "geo=FALSE option to get non-georeferenced recodrs, some of it may have a textual georeference or locality description")
+5. Some data records in GBIF coes with uncertaint asscociated with the georeferences.
 
 #### 2.3.2 Filtered data visualisation based on expert judgement/background knowledge
 ```{r filtered presence data}
@@ -136,7 +137,7 @@ acg<-filtered_acgeo
 library(sp)
 coordinates(acg)<- ~longitude+latitude
 
-gadm_countries<-readRDS("./data/countries_gadm28.rds")
+gadm_countries<-readRDS("./data/countries_gadm28.rds") # GADM map is high in accuracy but heavier to load than the wrld_simpl map embedded in R 
 
 crs(acg)<-crs(gadm_countries)
 
@@ -158,7 +159,38 @@ points(acg[j, ], col='red', pch=20, cex=2)
 
 ```
 
-No data missmatch
+All data points matched with the assigned countries, no missmatch found.
+
+#### 2.3.5 Sampling bias
+
+Subsampling records is an attempt to remove some of the bias by only selecting one data point per grid.
+However, this reduces the locally dense records which might be a true reflection of the relative suitable habitat. If that is the case, this sampling bias procedure can potentially lead to 'underestimation'.
+
+
+```{r Sampling Bias}
+
+r<-raster(acg) # generate a raster layer with the extent of acg
+res(r)<-1 # 1 degree spatial resolution
+r<-extend(r, extent(r)+1) # expand the r extent by 1 degree
+
+acsel<-gridSample(acg, r, n=1)  # this allows only one sample per cell
+#Chess-board function can be used as the sampling strategy to split data and training and testing sets.
+
+
+
+p <- rasterToPolygons(r)
+plot(p, border='gray')
+points(acg)
+points(acsel, cex=1, col='red', pch='x')
+
+#file <- paste(system.file(package="dismo"), '/ex/acaule.csv', sep='')
+write.csv(acsel, "./data/acaule.csv")
+acsel <- read.csv("./data/acaule.csv") #Cleaned data
+
+```
+
 
 
 ##Chapter 3 Environmental variables
+
+
