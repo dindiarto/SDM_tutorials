@@ -166,6 +166,8 @@ All data points matched with the assigned countries, no missmatch found.
 Subsampling records is an attempt to remove some of the bias by only selecting one data point per grid.
 However, this reduces the locally dense records which might be a true reflection of the relative suitable habitat. If that is the case, this sampling bias procedure can potentially lead to 'underestimation'.
 
+>A fundamental limitation of presence-only data is that  sample  selection  bias  (whereby  some  areas  in  the landscape are sampled more intensively than others) has a much  stronger  effect  on  presence-only  models  than  on presence-absence models, see 10.1111/j.1472-4642.2010.00725.x
+
 
 ```{r Sampling Bias}
 
@@ -191,6 +193,84 @@ acsel <- read.csv("./data/acaule.csv") #Cleaned data
 
 
 
-##Chapter 3 Environmental variables
+##Chapter 3 Absence and background points
 
+If we have a large dataset with presence/absence and well designed survey, we should apply a method that can use these data (GLM framework a.k.a the classical approach).
+
+Presence only data still can be used in a method that needs absence data. We substitute absence data with background data.  However, background data is not equal with pseudo-absence data.
+
+It's safer to define backround data is used to characterise (the probability density of) environments in the study region, rather than attempting to guess at absence locations.
+
+Please mind that absence data can be biased and incomplete.
+
+> Absence data are plagued by issues of detection probability (Wintle et al. , 2004; MacKenzie, 2005) so that even presence-absence data may not yield a good estimate of prevalence, see 10.1111/j.1472-4642.2010.00725.x
+
+### 3.1 Generating background points
+
+```{r}
+#get the predetermined file names
+files <- list.files(path=paste(system.file(package="dismo"), '/ex',sep=''), pattern='grd', full.names=TRUE )
+
+mask <- raster(files[1]) #apply the first file to create a RasterLayer
+set.seed(1963) # set seed to assure that the examples will always have the same random sample
+bg<- randomPoints(mask,500) # select 500 random points; the points will lie on grids that have values, no points will be generated on NAs
+
+#inspect the results by plotting:
+
+par(mfrow=c(1,2))
+plot(!is.na(mask), legend=FALSE) # plotting with boolean values
+points(bg, cex=0.5)
+
+# we repeat the samplin, but limit the area of sampling using a spatial extent
+e<-extent(-80, -53, -39, -22)
+bg2<-randomPoints(mask, 50, ext=e)
+plot(!is.na(mask), legend=FALSE)
+plot(e, add=TRUE, col='red')
+points(bg2, cex=0.5)
+
+```
+
+### 3.2 Generating pseudo-absence points
+
+
+VanDerWal et al. (2009) sampled withn a radius of presence points to sample ; basically this is a more restricted area of background points.
+
+```{r}
+ac<-read_csv("./data/acaule.csv")
+#convert the data.frame into a SpatialPointsDataFrame
+coordinates(ac)<-~longitude-latitude
+projection(ac)<- CRS('+proj=longlat +datum=WGS84')
+
+# circles with a radius of 50 km
+x <- circles(ac, d=50000, lonlat=TRUE)
+pol <- polygons(x)
+
+
+# sample randomly from all circles
+samp1 <- spsample(pol, 250, type='random', iter=25)
+# get unique cells
+cells <- cellFromXY(mask, samp1) #Get cell (pixel) number
+length(cells)
+cells <- unique(cells) # get rid of duplicates, or points under the same pixels
+length(cells)
+
+xy <- xyFromCell(mask, cells) # return the vector of cells back to SpatialPointsDataFrame
+plot(pol, axes=TRUE)
+points(xy, cex=0.75, pch=20, col='blue') # pseudo absence points
+#points(ac, cex=0.5, pch=20, col='red') # presence points
+
+
+```
+
+Not all the pseudo absence points within the polygons. We will remove the points outside the polygons with the functions below:
+
+```{r}
+spxy <- SpatialPoints(xy, proj4string=CRS('+proj=longlat +datum=WGS84'))
+o <- over(spxy, geometry(x)) # overlay function
+xyInside <- xy[!is.na(o), ] #remove NAs
+plot(pol, axes=T)
+points(xy,  col='blue', cex=0.75, pch=20)
+points(xyInside,  col='red', cex=0.75, pch=20)
+#blue points represent the data points that lie outside the polygons, overlay function selects data points that lie inside the polygons (red).
+```
 
