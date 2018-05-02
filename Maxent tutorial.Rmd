@@ -274,3 +274,311 @@ points(xyInside,  col='red', cex=0.75, pch=20)
 #blue points represent the data points that lie outside the polygons, overlay function selects data points that lie inside the polygons (red).
 ```
 
+
+##Chapter 4 Environmental data
+
+### 4.1 Raster data covariates
+
+There are many terms for the predictor variables in SDMs: independent variables, environmental covariates, predictors, etc.
+
+Avoid to use ASCII because it is slow. See http://www.worldclim.org/bioclim for descriptions for bioclimatic varaibles codes.
+
+```{r}
+#load predictor raster data
+files <- list.files(path=paste(system.file(package="dismo"),'/ex', sep=''), pattern='grd', full.names=TRUE )
+
+predictors <- stack(files)
+names(predictors)
+plot(predictors)
+```
+
+Overlay the administration boundaries and presence points:
+```{r}
+library(maptools)
+data(wrld_simpl)
+file <- paste(system.file(package="dismo"), "/ex/bradypus.csv", sep="")
+bradypus <- read_csv(file)
+# we do not need the first column
+bradypus <- bradypus[,-1]
+
+
+# first layer of the RasterStack
+plot(predictors, 1)
+# note the "add=TRUE" argument with plot
+plot(wrld_simpl, add=TRUE)
+# with the points function, "add" is implicit
+points(bradypus, col='blue')
+
+```
+
+Predictor variable selection is crucial when the objective f the study is prediction. In prediction we will apply new times or places, e.g., beyond the same geographic areas.
+
+### 4.2 Extracting values from rasters
+
+We apply extract function to extract for the _Bradypus_ occurence points and for the 500 random background points.
+
+```{r}
+presvals <- extract(predictors, bradypus)
+# setting random seed to always create the same
+# random set of points for this example
+set.seed(0)
+backgr <- randomPoints(predictors, 500)
+absvals <- extract(predictors, backgr)
+pb <- c(rep(1, nrow(presvals)), rep(0, nrow(absvals)))
+sdmdata <- data.frame(cbind(pb, rbind(presvals, absvals)))
+sdmdata[,'biome'] = as.factor(sdmdata[,'biome']) #define biomes as factor
+head(sdmdata)
+
+summary(sdmdata)
+
+```
+Bioclimatic variables:
+
+BIO1 = Annual Mean Temperature
+BIO5 = Max Temperature of Warmest Month
+BIO6 = Min Temperature of Coldest Month
+BIO7 = Temperature Annual Range (BIO5-BIO6)
+BIO8 = Mean Temperature of Wettest Quarter
+BIO12 = Annual Precipitation
+BIO16 = Precipitation of Wettest Quarter
+BIO17 = Precipitation of Driest Quarter
+
+Model selection process involves a check for collinearity.
+
+```{r echo=T}
+# pairs plot of the values of the climate data
+# at the bradypus occurrence sites.
+#pairs(sdmdata[,2:5], cex=0.1, fig=TRUE)
+#See Dormann et al. (2013)for a discussion of methods to remove colinearity.
+
+##Correlation matrix; a better version than 'pairs' function
+library(psych)
+pairs.panels(sdmdata[,2:9], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+             )
+
+#find variables with high correlation
+library(caret)
+correlated_variables<-findCorrelation(cor(sdmdata[,2:9]), cutoff = .7, exact = T, names=F)
+```
+
+
+"findCorrelation" suggest __`r colnames(sdmdata[correlated_variables+1])`__ is/are potentially collinear with other predictors.
+
+
+***
+
+##Chapter 5 Model fitting
+
+### 5.1 Classic GLM model
+
+![Generalized linear model with second order polynomial terms response curve used to model distribution of plants and vegetation. ](./data/GLM.PNG)
+
+```{r}
+
+
+m1 <- glm(pb ~ bio1 + bio5 + bio12, data=sdmdata)
+class(m1)
+summary(m1)
+
+```
+
+### 5.1 Classic Bioclim model
+![environmental envelope of the BIOCLIM type used to model distribution of plants and vegetation. ](./data/ENVELOP.PNG)
+
+
+```{r}
+bc <- bioclim(presvals[,c('bio1', 'bio5', 'bio12')])
+bc
+```
+
+```{r}
+#Generate response plots for each bioclimatc variable
+response(bc)
+```
+
+
+##Chapter 6 Model prediction
+
+Most of the purpose of SDM is to create a map of suitability scores. R can handle this easily by providing a raster object and a model object.
+
+```{r}
+p <- predict(predictors, m1)
+plot(p)
+```
+
+
+##Chapter 7 Model evaluation
+
+Pretty much model evaluation is focused on how well the data predicts to points not used in model training (cross-validation of partitioned data, e.g., chessboard sampling). In other words,  this consists of creating a model with one ’training’ data set, and testing it with another data set of known occurrences.
+
+Some checkpoints in model evaluation includes:
+
+1. ecologically sensible.
+2. fitted functions make sense
+3. reasonable predictions (pass visual and quantitative check)
+4. no spatial patterns in model residuals
+
+Meaasures for evaluation models are often 'threshold dependent'. Values above the threshold values indicate presence and values below the threshold values indicate absence.
+
+the Area Under the Receiver Operator Curve (AUC) is the most widely used non threshold evaluation method. AUC is a measure of rank correlation. 
+AUC score of 0.5 means that the model is as hood as a random guess.
+
+
+Here is an illustration on how AUC is computed:
+
+We start off by generating two varaibles with random normally distributed values, but different mean and standard deviation.
+```{r AUC}
+p <- rnorm(50, mean=0.7, sd=0.3)
+a <- rnorm(50, mean=0.4, sd=0.4)
+par(mfrow=c(1, 2))
+plot(sort(p), col='red', pch=21)
+points(sort(a), col='blue', pch=24)
+legend(1, 0.95 * max(a,p), c('presence', 'absence'), pch=c(21,24), col=c('red', 'blue'))
+comb = c(p,a)
+group = c(rep('presence', length(p)), rep('absence', length(a)))
+boxplot(comb~group, col=c('blue', 'red'))
+```
+
+
+Then, we compute the  correlation coeeficient:
+
+```{r}
+group = c(rep(1, length(p)), rep(0, length(a)))
+cor.test(comb, group)$estimate
+mv <- wilcox.test(p,a)
+auc <- as.numeric(mv$statistic) / (length(p) * length(a))
+auc
+```
+
+Alternatively, we can use model evaluation functions from 'dismo' package:
+```{r}
+e<-evaluate(p=p, a=a)
+e
+```
+
+```{r}
+par(mfrow=c(1, 2))
+density(e)
+boxplot(e, col=c('blue', 'red'))
+```
+
+
+
+```{r}
+samp <- sample(nrow(sdmdata), round(0.75 * nrow(sdmdata)))
+traindata <- sdmdata[samp,]
+traindata <- traindata[traindata[,1] == 1, 2:9]
+testdata <- sdmdata[-samp,]
+bc <- bioclim(traindata)
+e <- evaluate(testdata[testdata==1,], testdata[testdata==0,], bc)
+e
+```
+
+```{r}
+plot(e, 'ROC')
+
+```
+
+
+In the presence-only data, we divide the data in two random sets, one for training the model and one for evaluating the model.
+
+```{r}
+samp <- sample(nrow(sdmdata), round(0.75 * nrow(sdmdata))) # select 75% of the total data, gives you back in row numbers
+traindata <- sdmdata[samp,] #get the data based on the selected row numbers
+
+traindata <- traindata[traindata[,1] == 1, 2:9] 
+testdata <- sdmdata[-samp,] # select test data
+
+
+bc <- bioclim(traindata)
+e <- evaluate(testdata[testdata==1,], testdata[testdata==0,], bc)
+e
+```
+```{r}
+plot(e, 'ROC')
+
+```
+
+
+
+For a more rigorous partitioning procedure, we can use  k-fild data partitioning. It creates a vector that assigns each row in the data matrix to a group ( between 1 to k). In this case we use k=5 which means we can fit and tests our model five times.
+
+
+```{r}
+pres <- sdmdata[sdmdata[,1] == 1, 2:9]
+back <- sdmdata[sdmdata[,1] == 0, 2:9]
+
+k <- 5
+group <- kfold(pres, k)
+group[1:10]
+
+```
+
+
+```{r}
+e <- list()
+for (i in 1:k) {
+  train <- pres[group != i,] # if k =1, then train data consists of k=2,3,4,5
+  test <- pres[group == i,] # if k =1, then test data consists of k=1
+  bc <- bioclim(train)
+  e[[i]] <- evaluate(p=test, a=back, bc) ;#background remains the same
+}
+
+```
+
+```{r}
+auc <- sapply( e, function(x){slot(x, 'auc')} )
+auc
+mean(auc) #mean AUC values
+
+```
+
+```{r}
+#the ”maximum of the sum of the sensitivity (true positive rate) and specificity (true negative rate)”
+
+ sapply( e, function(x){ x@t[which.max(x@TPR + x@TNR)] } )
+```
+
+AUC indicator is highly spatial extent- sensitive. The larger the extent, the higher AUC value. In this sense, AUC values are biased and cannot be directly compared.
+
+To resolve this problem, we can apply "point-wise distance sampling" to remove "spatial sorting bias".
+```{r}
+nr <- nrow(bradypus)
+s <- sample(nr, 0.25 * nr) #sample a quarter of presence data
+pres_train <- bradypus[-s, ] # select 75% (non-s)
+pres_test <- bradypus[s, ] # select the sampled data (s)
+nr <- nrow(backgr)
+s <- sample(nr, 0.25 * nr)
+back_train <- backgr[-s, ]
+back_test <- backgr[s, ]
+
+#spatial sorting bias
+sb<-ssb(pres_test, back_test, pres_train)
+sb[,1] / sb[,2] # an indicator of spatial sorting bias
+
+```
+
+If there is no SSB, the value should be 1, SSB is very strong when the result close to zero.
+
+
+```{r}
+#point wise distance sampling
+i <- pwdSample(pres_test, back_test, pres_train, n=1, tr=0.1)
+pres_test_pwd <- pres_test[!is.na(i[,1]), ]
+back_test_pwd <- back_test[na.omit(as.vector(i)), ]
+sb2 <- ssb(pres_test_pwd, back_test_pwd, pres_train)
+sb2[1]/ sb2[2] # SSB has been removed!
+```
+
+
+Run the model again and evaluate the model.
+```{r}
+bc <- bioclim(predictors, pres_train)
+e<-evaluate(bc, p=pres_test, a=back_test, x=predictors)
+plot(e, 'ROC')
+```
+
