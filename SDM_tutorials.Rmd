@@ -1,5 +1,5 @@
 ---
-title: "Species Distribution Modelling with MaxEnt in R"
+title: "Species Distribution Modelling in R"
 output: html_notebook
 author: "Dony Indiarto"
 ---
@@ -579,6 +579,76 @@ Run the model again and evaluate the model.
 ```{r}
 bc <- bioclim(predictors, pres_train)
 e<-evaluate(bc, p=pres_test, a=back_test, x=predictors)
+plot(e, 'ROC')
+```
+
+
+## Chapter 8 Maxent
+
+```{r}
+#install.packages(c('BIEN', 'rJava', 'maxnet'))
+
+library(raster)
+library(rgdal)
+library(maps)
+library(mapdata)
+library(BIEN)
+library(dismo)
+library(rJava)
+library(maptools)
+library(jsonlite)
+library(glmnet)
+library(maxnet)
+```
+
+
+```{r}
+
+jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
+
+if (file.exists(jar)) {
+ xm <- maxent(predictors, as.matrix(pres_train), factors='biome')
+ plot(xm)
+  } else {
+  cat('cannot run this example because maxent is not available')
+  plot(1)
+  }
+
+```
+
+From the plot above we can see the model is most sensitive to variation in biome (WWF ecoregion), with additional contributions from  BIO7 "Temperature Annual Range (BIO5-BIO6)",  BIO 16 Precipitation of Wettest Quarter.
+
+
+```{r}
+if (file.exists(jar)) {
+  response(xm)
+  } else {
+  cat('cannot run this example because maxent is not available')
+  plot(1)
+  }
+
+```
+In the response plot above 
+
+```{r}
+ if (file.exists(jar)) {
+  e <- evaluate(pres_test, back_test, xm, predictors)
+  e
+  px <- predict(predictors, xm, ext=extent(predictors), progress='')
+  par(mfrow=c(1,2))
+  plot(px, main='Maxent, raw values')
+  plot(wrld_simpl, add=TRUE, border='dark grey')
+  tr <- threshold(e, 'spec_sens')
+  plot(px > tr, main='presence/absence')
+  plot(wrld_simpl, add=TRUE, border='dark grey')
+  points(pres_train, pch=' ')
+  } else {
+  plot(1)
+  }
+```
+
+
+```{r}
 plot(e, 'ROC')
 ```
 
